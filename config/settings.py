@@ -40,6 +40,8 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
+    'corsheaders',
+    'rest_framework_simplejwt.token_blacklist',
 ]
 
 LOCAL_APPS = [
@@ -51,6 +53,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -136,7 +139,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=45),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'BLACKLIST_AFTER_ROTATION': True,  # Can not reuse
     'ROTATE_REFRESH_TOKENS': True,  # return new refresh token with access token when token refresh
@@ -145,4 +148,8 @@ SIMPLE_JWT = {
 AUTHENTICATION_BACKENDS = [
     # 'django.contrib.auth.backends.ModelBackend',
     'account.backend.EmailOrUsernameBackend',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
 ]
