@@ -55,10 +55,13 @@ class UserUpdateView(generics.UpdateAPIView):
 
 class LogoutView(APIView):
     def post(self, request):
-        try:
-            refresh_token = request.data.get('refresh')
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-            return Response({'detail': 'Logout successful'}, status=status.HTTP_200_OK)
-        except TokenError:
-            return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+        refresh_token = request.data.get('refresh')
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({'detail': 'Logout successful'}, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'detail': 'No token provided'}, status=status.HTTP_400_BAD_REQUEST)
