@@ -46,6 +46,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     'account',
+    'company',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -139,7 +140,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'BLACKLIST_AFTER_ROTATION': True,  # Can not reuse
     'ROTATE_REFRESH_TOKENS': True,  # return new refresh token with access token when token refresh
