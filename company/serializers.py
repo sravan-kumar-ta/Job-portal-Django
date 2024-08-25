@@ -1,3 +1,4 @@
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from account.serializers import UserSerializer
@@ -17,6 +18,19 @@ class CompanySerializer(serializers.ModelSerializer):
 
 
 class JobSerializer(serializers.ModelSerializer):
+    company = CompanySerializer(required=False)
+
     class Meta:
         model = Job
         fields = "__all__"
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+
+        try:
+            company = Company.objects.get(user=user)
+        except ObjectDoesNotExist:
+            raise serializers.ValidationError("The user does not have an associated company.")
+
+        validated_data['company'] = company
+        return super().create(validated_data)

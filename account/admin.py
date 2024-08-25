@@ -22,7 +22,7 @@ class CustomUserAdmin(UserAdmin):
         (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser',)}),
     )
 
-    list_display = ('username', 'email', 'is_active', 'is_staff')
+    list_display = ('username', 'email', 'role', 'is_staff')
     list_filter = ('role', 'is_staff', 'is_active')
     filter_horizontal = ()
 
