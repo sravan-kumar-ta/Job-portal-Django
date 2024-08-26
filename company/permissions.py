@@ -10,3 +10,8 @@ class IsCompanyOrAdmin(BasePermission):
             return request.user.role in ['admin', 'company']
 
         return False
+
+
+class IsCompany(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == "company"
