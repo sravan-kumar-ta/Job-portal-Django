@@ -39,13 +39,13 @@ class Job(models.Model):
     employment_type = models.CharField(
         max_length=50,
         choices=[
-            ('FT', 'Full-time'),
-            ('PT', 'Part-time'),
-            ('CT', 'Contract'),
-            ('FL', 'Freelance'),
-            ('IT', 'Internship'),
+            ('Full-time', 'Full-time'),
+            ('Part-time', 'Part-time'),
+            ('Contract', 'Contract'),
+            ('Freelance', 'Freelance'),
+            ('Internship', 'Internship'),
         ],
-        default='FT'
+        default='Full-time'
     )
 
     def __str__(self):
