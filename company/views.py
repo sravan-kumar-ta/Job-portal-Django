@@ -1,5 +1,8 @@
-from rest_framework import mixins, viewsets, generics
+from rest_framework import mixins, viewsets, generics, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .models import Company, Job
 from .permissions import IsCompanyOrAdmin, IsCompany
@@ -33,3 +36,23 @@ class UserCompanyView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, generi
 
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
+
+
+class CompanyJobsView(APIView):
+    permission_classes = [IsAuthenticated, IsCompany]
+
+    def get(self, request):
+        jobs = Job.objects.filter(company__user=request.user)
+        serializer = JobSerializer(jobs, many=True)
+        return Response(serializer.data)
+
+    def patch(self, request, pk=None):
+        job = Job.objects.filter(company__user=request.user, pk=pk).first()
+        if not job or job.company.user != request.user:
+            raise PermissionDenied("You do not have permission to update this job.")
+
+        serializer = JobSerializer(job, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

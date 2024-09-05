@@ -8,8 +8,8 @@ class CompanyAdmin(admin.ModelAdmin):
 
 
 class JobAdmin(admin.ModelAdmin):
-    list_display = ('title', 'company', 'employment_type', 'vacancy', 'is_active')
-    list_filter = ('company', 'is_active')
+    list_display = ('title', 'company', 'employment_type', 'vacancy')
+    list_filter = ('company', )
 
 
 admin.site.register(Company, CompanyAdmin)
