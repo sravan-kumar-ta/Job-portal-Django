@@ -1,0 +1,21 @@
+from rest_framework.permissions import BasePermission
+
+
+class IsAdminOrOwner(BasePermission):
+    def has_permission(self, request, view):
+        if view.action in ['retrieve', 'list']:
+            return True
+
+        if view.action in ['create', 'update', 'partial_update', 'destroy']:
+            return request.user.role in ['admin', 'job_seeker']
+
+        return False
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.role == 'admin':
+            return True
+
+        if request.user.role == 'job_seeker' and obj.seeker.user == request.user:
+            return True
+
+        return False
