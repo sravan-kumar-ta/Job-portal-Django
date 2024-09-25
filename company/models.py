@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from seeker.models import SeekerProfile
+
 
 def standardize_location_name(location):
     return location.strip().title()
@@ -54,3 +56,26 @@ class Job(models.Model):
         ordering = ['-date_posted']
         verbose_name = "Job"
         verbose_name_plural = "Jobs"
+
+
+class Application(models.Model):
+    job = models.ForeignKey(Job, on_delete=models.CASCADE, related_name='applications')
+    applicant = models.ForeignKey(SeekerProfile, on_delete=models.CASCADE, related_name='job_applications')
+    resume = models.FileField(upload_to='application_resumes/')
+    cover_letter = models.TextField(null=True, blank=True)
+    applied_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pending'),
+            ('accepted', 'Accepted'),
+            ('rejected', 'Rejected'),
+        ],
+        default='pending'
+    )
+
+    class Meta:
+        unique_together = ('job', 'applicant')
+
+    def __str__(self):
+        return f"Application by {self.applicant.user.get_full_name()} for {self.job.title}"

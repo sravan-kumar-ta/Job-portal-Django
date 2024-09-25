@@ -1,28 +1,31 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import mixins, viewsets, generics, status
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Company, Job
-from .permissions import IsCompanyOrAdmin, IsCompany
-from .serializers import CompanySerializer, JobSerializer
+from seeker.models import Resume
+from . import serializers
+from .models import Company, Job, Application
+from .permissions import IsCompanyOrAdmin, IsCompany, RoleBasedPermission
 
 
 class CompanyViewSet(viewsets.ModelViewSet):
     queryset = Company.objects.all()
-    serializer_class = CompanySerializer
+    serializer_class = serializers.CompanySerializer
     permission_classes = [IsAuthenticated, IsCompanyOrAdmin]
 
 
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all()
-    serializer_class = JobSerializer
+    serializer_class = serializers.JobSerializer
     permission_classes = [IsAuthenticated, IsCompanyOrAdmin]
 
 
 class UserCompanyView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, generics.GenericAPIView):
-    serializer_class = CompanySerializer
+    serializer_class = serializers.CompanySerializer
     permission_classes = [IsAuthenticated, IsCompany]
 
     def get_queryset(self):
@@ -43,7 +46,7 @@ class CompanyJobsView(APIView):
 
     def get(self, request):
         jobs = Job.objects.filter(company__user=request.user)
-        serializer = JobSerializer(jobs, many=True)
+        serializer = serializers.JobSerializer(jobs, many=True)
         return Response(serializer.data)
 
     def patch(self, request, pk=None):
@@ -51,8 +54,77 @@ class CompanyJobsView(APIView):
         if not job or job.company.user != request.user:
             raise PermissionDenied("You do not have permission to update this job.")
 
-        serializer = JobSerializer(job, data=request.data, partial=True)
+        serializer = serializers.JobSerializer(job, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApplicationViewSet(viewsets.ModelViewSet):
+    queryset = Application.objects.all().order_by('-id')
+    serializer_class = serializers.ApplicationSerializer
+    permission_classes = [IsAuthenticated, RoleBasedPermission]
+
+    def get_queryset(self):
+        user = self.request.user
+        objects = super().get_queryset()
+
+        if user.role == 'admin':
+            return objects.all()
+
+        elif user.role == 'company':
+            return objects.filter(job__company__user=user)
+
+        elif user.role == 'job_seeker':
+            return objects.filter(applicant__user=user)
+
+        return objects.none()
+
+    def create(self, request, *args, **kwargs):
+        data = request.data.copy()
+        job_id = data.get('job')
+        resume_id = data.get('resume')
+
+        if Application.objects.filter(job=job_id, applicant__user=request.user).exists():
+            return Response(
+                {"detail": "You have already applied for this job."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        data['resume'] = get_object_or_404(Resume, id=resume_id).resume
+
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED,
+                        headers=self.get_success_headers(serializer.data))
+
+    @action(detail=False, methods=['GET'], permission_classes=[IsCompany])
+    def list_by_job(self, request):
+        job_id = request.query_params.get('jobID', None)
+        if not job_id:
+            return Response({"detail": "jobID parameter is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        applications = self.get_queryset().filter(job__id=job_id)
+        serializer = self.get_serializer(applications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['GET'], permission_classes=[IsCompany])
+    def filter_applications(self, request):
+        app_status = request.query_params.get('status')
+        job_id = request.query_params.get('jobID')
+
+        if not app_status or not job_id:
+            return Response(
+                {"detail": "Both jobID and status query parameters are required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        applications = self.get_queryset().filter(job__id=job_id)
+        if app_status != "all":
+            applications = applications.filter(status=app_status)
+
+        serializer = self.get_serializer(applications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

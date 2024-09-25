@@ -8,7 +8,7 @@ class SeekerProfile(models.Model):
     profile_photo = models.ImageField(upload_to='profile pictures/', null=True)
 
     def __str__(self):
-        return f"{self.user.username}'s Profile"
+        return f"{self.user.get_full_name()}'s Profile"
 
 
 class Resume(models.Model):
@@ -18,7 +18,7 @@ class Resume(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.seeker.user.username}'s Resume - {self.resume_title}"
+        return f"{self.seeker.user.get_full_name()}'s Resume - {self.resume_title}"
 
 
 class Experience(models.Model):
@@ -30,4 +30,4 @@ class Experience(models.Model):
     is_current = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.seeker.user.username} | {self.job_title} | {self.company}"
+        return f"{self.seeker.user.get_full_name()} | {self.job_title} | {self.company}"

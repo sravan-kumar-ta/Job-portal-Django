@@ -2,7 +2,9 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from account.serializers import UserSerializer
-from company.models import Company, Job
+from company.models import Company, Job, Application
+from seeker.models import SeekerProfile
+from seeker.serializers import SeekerProfileSerializer
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -34,3 +36,22 @@ class JobSerializer(serializers.ModelSerializer):
 
         validated_data['company'] = company
         return super().create(validated_data)
+
+
+class ApplicationSerializer(serializers.ModelSerializer):
+    job = serializers.PrimaryKeyRelatedField(queryset=Job.objects.all())
+
+    class Meta:
+        model = Application
+        fields = "__all__"
+        read_only_fields = ['applicant']
+
+    def create(self, validated_data):
+        validated_data['applicant'] = SeekerProfile.objects.get(user=self.context['request'].user)
+        return super().create(validated_data)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['job'] = JobSerializer(instance.job).data
+        representation['applicant'] = SeekerProfileSerializer(instance.applicant).data
+        return representation
