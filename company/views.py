@@ -1,7 +1,10 @@
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import mixins, viewsets, generics, status
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -18,10 +21,31 @@ class CompanyViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsCompanyOrAdmin]
 
 
+class JobsListPagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 50
+
+
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = serializers.JobSerializer
     permission_classes = [IsAuthenticated, IsCompanyOrAdmin]
+    filter_backends = [SearchFilter, DjangoFilterBackend, OrderingFilter]
+    search_fields = ['title', 'company__location']
+    filterset_fields = ['employment_type', 'salary']
+    ordering_fields = ['salary', 'date_posted']
+    ordering = ['-date_posted']
+    pagination_class = JobsListPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        min_salary = self.request.query_params.get('min_salary', None)
+        max_salary = self.request.query_params.get('max_salary', None)
+        if min_salary:
+            queryset = queryset.filter(salary__gte=min_salary)
+        if max_salary:
+            queryset = queryset.filter(salary__lte=max_salary)
+        return queryset
 
 
 class UserCompanyView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, generics.GenericAPIView):
