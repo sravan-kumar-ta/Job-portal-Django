@@ -1,9 +1,10 @@
 from django.urls import path
 
-from admin.views import JobSeekersListView, CompaniesListView, DashboardView
+from admin import views
 
 urlpatterns = [
-    path('job-seekers/', JobSeekersListView.as_view()),
-    path('companies/', CompaniesListView.as_view()),
-    path('dashboard/', DashboardView.as_view()),
+    path('job-seekers/', views.JobSeekersListView.as_view()),
+    path('companies/', views.CompaniesListView.as_view()),
+    path('dashboard/', views.DashboardView.as_view()),
+    path('company-approval/', views.ApproveCompany.as_view()),
 ]

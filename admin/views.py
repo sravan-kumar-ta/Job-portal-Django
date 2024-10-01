@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Q
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
@@ -39,7 +40,29 @@ class DashboardView(APIView):
     def get(self, request):
         data = User.objects.aggregate(
             job_seekers=Count('id', filter=Q(role='job_seeker')),
-            companies=Count('company')
+            companies=Count('company', distinct=True),
+            jobs=Count('company__jobs', distinct=True),
+            applications=Count('company__jobs__applications', distinct=True),
         )
 
         return Response(data, status=status.HTTP_200_OK)
+
+
+class ApproveCompany(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def patch(self, request):
+        company_id = request.data.get('company_id')
+        is_active = request.data.get('is_active')
+
+        if not company_id or is_active is None:
+            return Response(
+                {"detail": "company_id and is_active are required parameters."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        company = get_object_or_404(Company, id=company_id)
+        company.is_active = is_active
+        company.save()
+
+        return Response({"message": "Company status updated successfully."}, status=status.HTTP_200_OK)
