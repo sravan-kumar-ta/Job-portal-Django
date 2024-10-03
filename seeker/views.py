@@ -16,7 +16,7 @@ class SeekerProfileViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['GET', 'PATCH'], permission_classes=[IsAuthenticated])
     def my_profile(self, request):
-        obj = get_object_or_404(SeekerProfile, user=request.user)
+        obj, created = SeekerProfile.objects.get_or_create(user=request.user)
 
         if request.method == 'GET':
             serializer = self.get_serializer(obj)

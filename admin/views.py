@@ -12,10 +12,15 @@ from rest_framework.views import APIView
 
 from account.serializers import UserSerializer
 from admin.permissions import IsAdmin
-from company.models import Company, Job
-from company.serializers import CompanySerializer, JobSerializer
+from company.models import Company, Job, Application
+from company.serializers import CompanySerializer, JobSerializer, ApplicationSerializer
 
 User = get_user_model()
+
+
+class CustomPagination(PageNumberPagination):
+    page_size = 10
+    max_page_size = 50
 
 
 class DashboardView(APIView):
@@ -30,15 +35,10 @@ class DashboardView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class JobSeekersPagination(PageNumberPagination):
-    page_size = 10
-    max_page_size = 50
-
-
 class JobSeekersListView(ListAPIView):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    pagination_class = JobSeekersPagination
+    pagination_class = CustomPagination
 
     def get_queryset(self):
         return User.objects.filter(role="job_seeker").order_by('-id')
@@ -70,15 +70,17 @@ class ApproveCompany(APIView):
         return Response({"message": "Company status updated successfully."}, status=status.HTTP_200_OK)
 
 
-class JobsPagination(PageNumberPagination):
-    page_size = 3
-    max_page_size = 50
-
-
 class AllJobsListView(ListAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    pagination_class = JobsPagination
+    pagination_class = CustomPagination
     filter_backends = [SearchFilter, DjangoFilterBackend]
     filterset_fields = ['company__title']
+
+
+class AllApplicationListView(ListAPIView):
+    queryset = Application.objects.all()
+    serializer_class = ApplicationSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    pagination_class = CustomPagination
