@@ -1,5 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 
 from account.serializers import UserSerializer
 from company.models import Company, Job, Application
@@ -33,6 +34,9 @@ class JobSerializer(serializers.ModelSerializer):
             company = Company.objects.get(user=user)
         except ObjectDoesNotExist:
             raise serializers.ValidationError("The user does not have an associated company.")
+
+        if not company.is_active:
+            raise PermissionDenied("The company approval is pending at the Admin.")
 
         validated_data['company'] = company
         return super().create(validated_data)
